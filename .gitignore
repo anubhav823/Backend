@@ -1,0 +1,6 @@
+
+*.md
+*.yml
+*.ps1
+*.json
+node_modules/*
