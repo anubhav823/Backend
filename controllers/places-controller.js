@@ -109,7 +109,7 @@ const deletePlaceById = async (req, res, next) => {
         await place.remove();
     } catch (err) {
         const error = new HttpError('Something wrong', 500);
-        return next(error);
+        return next(error); 
     }
     res.status(200).json({ message: "Deleted place with id " + placeId + " successfully" })
 }

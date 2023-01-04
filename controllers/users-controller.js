@@ -11,15 +11,16 @@ const signup = async (req, res, next) => {
     if (!errors.isEmpty()) {
         return next(new HttpError('Invalid inputs passed', 422))
     }
-    const { name, email, password } = req.body;
+    const { name, email, password, places, address, image} = req.body;
     let existingUser;
     try {
-        existingUser = User.findOne({ email: email });
+        existingUser = await User.findOne({ email: email });
     } catch (err) {
         const error = new HttpError("Error!", 500);
         return next(error);
     }
     if (existingUser) {
+        // console.log(existingUser.toObject({getters:true}).email)
         const error = new HttpError("User exists already!", 422);
         return next(error);
     }
@@ -27,28 +28,33 @@ const signup = async (req, res, next) => {
         name,
         email,
         password,
-        image: '',
-        places
+        image,
+        places,
+        address
     })
     try {
         await createdUser.save();
     } catch (err) {
+        console.log(err)
         const error = new HttpError("Error saving!", 500);
         return next(error);
     }
 
     res.status(201).json({ user: createdUser.toObject({ getters: true }) })
 }
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
     const { email, password } = req.body;
-    const identifiedUser = dummy_users.find(user => user.email === email)
-    if (!identifiedUser) {
-        throw new HttpError('No such user found', 401);
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ email: email });
+    } catch (err) {
+        const error = new HttpError("Error!", 500);
+        return next(error);
     }
-    if (identifiedUser.password === password) {
-        res.status(200).json({ message: 'Logged in successfully' })
+    if (!existingUser || existingUser.password !== password) {
+        return next(new HttpError('Password incorrect', 401))
     } else {
-        throw new HttpError('Password incorrect', 401)
+        res.status(200).json({ message: 'Logged in successfully' })
     }
 }
 
