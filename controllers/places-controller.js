@@ -2,6 +2,8 @@ const HttpError = require('../models/http-error')
 const { validationResult } = require('express-validator')
 
 const Place = require('../models/place')
+const User = require('../models/user')
+const { default: mongoose } = require('mongoose')
 
 const getPlaceById = async (req, res, next) => {
     const placeId = req.params.pid;
@@ -58,8 +60,27 @@ const createPlace = async (req, res, next) => {
         address,
         creator
     })
+
+    let user;
     try {
-        await createdPlace.save();
+        user = await User.findById(creator);
+    } catch (err) {
+        const error = new HttpError('Failed, please try again', 500);
+        return next(error)
+    }
+
+    if (!user) {
+        const error = new HttpError('Failed, please try again', 404);
+        return next(error)
+    }
+
+    try {
+        const sess = await mongoose.startSession();
+        sess.startTransaction();
+        await createdPlace.save({ session: sess });
+        user.places.push(createdPlace);
+        await user.save({ session: sess });
+        sess.commitTransaction(); 
     } catch (err) {
         const error = new HttpError('Failed, please try again', 500);
         return next(error)
@@ -109,7 +130,7 @@ const deletePlaceById = async (req, res, next) => {
         await place.remove();
     } catch (err) {
         const error = new HttpError('Something wrong', 500);
-        return next(error); 
+        return next(error);
     }
     res.status(200).json({ message: "Deleted place with id " + placeId + " successfully" })
 }

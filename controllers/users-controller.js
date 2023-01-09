@@ -3,15 +3,22 @@ const HttpError = require('../models/http-error')
 const { validationResult } = require('express-validator')
 const User = require('../models/user')
 
-const getUsers = (req, res, next) => {
-    res.status(200).json({ users: dummy_users })
+const getUsers = async (req, res, next) => {
+    let users;
+    try{
+        users = await User.find({}, '-password');
+    }catch(err){
+        const error = new HttpError("Error!", 500);
+        return next(error);
+    }
+    res.json({users:(await users).map(user=>user.toObject({getters:true}))})
 }
 const signup = async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return next(new HttpError('Invalid inputs passed', 422))
     }
-    const { name, email, password, places, address, image} = req.body;
+    const { name, email, password , address, image} = req.body;
     let existingUser;
     try {
         existingUser = await User.findOne({ email: email });
@@ -20,7 +27,6 @@ const signup = async (req, res, next) => {
         return next(error);
     }
     if (existingUser) {
-        // console.log(existingUser.toObject({getters:true}).email)
         const error = new HttpError("User exists already!", 422);
         return next(error);
     }
@@ -29,7 +35,7 @@ const signup = async (req, res, next) => {
         email,
         password,
         image,
-        places,
+        places:[],
         address
     })
     try {
