@@ -14,6 +14,7 @@ const getUsers = async (req, res, next) => {
     res.json({users:(await users).map(user=>user.toObject({getters:true}))})
 }
 const signup = async (req, res, next) => {
+    console.log('from front end')
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return next(new HttpError('Invalid inputs passed', 422))
